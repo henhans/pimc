@@ -24,7 +24,7 @@ pimc::pimc(path p)
 
 bool pimc::CenterOfMassMove(path p, int ptcl)
 {
-  srand((unsigned)time(NULL));
+  //srand((unsigned)time(NULL));
 
   int NumTime=p.get_NumTime();
   double delta = 0.5;
@@ -64,8 +64,11 @@ bool pimc::CenterOfMassMove(path p, int ptcl)
   }
 }
 
+// There is bug inside stagingMove
 bool pimc::StagingMove(path p, int ptcl)
 {
+  //srand((unsigned)time(NULL));
+
   // the length of the stage
   int m = 16;
   int NumTime=p.get_NumTime();
@@ -74,7 +77,9 @@ bool pimc::StagingMove(path p, int ptcl)
   double oldbeads[m-1];
 
   // Choose the start and end of the stage
-  int alpha_start = ((int) NumTime*((double) rand() / (RAND_MAX)) ); //np.random.randint(0,Path.numTimeSlices)
+  int alpha_start = (int) NumTime*((double) rand() / (RAND_MAX)) ; //np.random.randint(0,Path.numTimeSlices)
+  //cout<< alpha_start<< endl;
+  //int alpha_start = 15;
   int alpha_end = (alpha_start + m) % NumTime;
 
   // Record the positions of the beads to be updated and store the action
@@ -91,14 +96,23 @@ bool pimc::StagingMove(path p, int ptcl)
 
   // Generate new positions and accumulate the new action
   double newAction = 0.0;
+
   for (int a=1; a<m; a++)
   {
+    int slicem1;
     int slice = (alpha_start + a) % NumTime;
-    int slicem1 = (slice - 1) % NumTime;
+    if( (slice-1) > 0 )   
+      slicem1 = (slice - 1) % NumTime;
+    else if( (slice-1)==0)
+      slicem1 = 0;
+    else
+      slicem1 = ((slice - 1) % NumTime) + NumTime;
+
+    //cout << slicem1 <<endl;
     double tau1 = (m-a)*tau;
-    double avex = (tau1*p.beads[slicem1][ptcl] +
-            tau*p.beads[alpha_end][ptcl]) / (tau + tau1);
-    double sigma2 = 2.0*lam / (1.0 / tau + 1.0 / tau1);
+    //cout <<ptcl <<" " << slicem1 << " "<< slice <<endl;
+    double avex = (tau1*p.beads[slicem1][ptcl] + tau*p.beads[alpha_end][ptcl]) / (tau + tau1);
+    double sigma2 = 2.0*lam / ((1.0 / tau) + (1.0 / tau1));
     p.beads[slice][ptcl] = avex + sqrt(sigma2)*((double) rand() / (RAND_MAX));
     newAction += p.PotentialAction(slice);
   }   
@@ -124,18 +138,19 @@ vector<double> pimc::pimc_run(int NumSteps, path p)
       // for each particle try a center-of-mass random move
       for (int i=0; i<NumParticle; i++) 
       {
-        int ptcl=( (int) NumParticle*((double) rand() / (RAND_MAX)) );         
+        int ptcl= (int) NumParticle*((double) rand() / (RAND_MAX)) ;         
+        //cout<< ptcl << endl;
         if( CenterOfMassMove(p,ptcl) )
             cnumAccept += 1;
       }
 
       // for each particle try a staging move
-      for (int i=0; i<NumParticle; i++)
+      /*for (int i=0; i<NumParticle; i++)
       {
-        int ptcl=( (int) NumParticle*((double) rand() / (RAND_MAX)) );
+        int ptcl= (int) NumParticle*((double) rand() / (RAND_MAX)) ;
         if ( StagingMove(p,ptcl))
               snumAccept += 1;
-      }
+      }*/
 
       // measure the energy
       if ( (steps % observableSkip == 0) && (steps > equilSkip) )
@@ -146,8 +161,11 @@ vector<double> pimc::pimc_run(int NumSteps, path p)
   }
 
   cout<< "Acceptance Ratios:" <<endl;
+  cout<< "Total Sampling:   " << NumSteps*NumParticle << endl;
+  cout<< "Accepted CM:      " << cnumAccept <<endl; 
+  cout<< "Accepted Stage:   " << snumAccept <<endl;
   cout<< "Center of Mass:   " << ((1.0*cnumAccept)/(NumSteps*NumParticle)) << endl;
   cout<< "Staging:          " << ((1.0*snumAccept)/(NumSteps*NumParticle)) << endl;
-  return EnergyTrace;
+  return EnergyTrace;  
 
 }

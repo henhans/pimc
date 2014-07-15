@@ -25,7 +25,7 @@ path::path( int NP, int NT, double t, double l)
   }
 
   //initialize the random position for each  particle at each time slice
-  srand((unsigned)time(NULL)); // initialize random seed
+  //srand((unsigned)time(NULL)); // initialize random seed
 
   for(int i=0; i<NumTime; i++)
   {

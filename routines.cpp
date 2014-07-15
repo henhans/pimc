@@ -198,7 +198,7 @@ double VectorProduct(int N, double* x, double* y)
   for (int j=0; j<N; j++)
   {
     a+=x[j]*y[j];
-    cout<<x[j]<<endl;
+    //cout<<x[j]<<endl;
   }
   
   return a;
